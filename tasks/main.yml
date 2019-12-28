@@ -1,0 +1,3 @@
+---
+# tasks file for roles/kvs-app
+ - import_tasks: install-pApplets.yml 

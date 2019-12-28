@@ -1,0 +1,55 @@
+---
+# Tasks to set up and run our processing app
+- name: Copy Processing application
+  synchronize:
+    src: "files/pApplets/"
+    dest: "{{ PApplet_path }}/"
+    recursive: yes
+    delete: yes
+    rsync_opts:
+      - "--exclude=.DS_Store"
+
+- name: Create hostinfo.json file in app data directory
+  copy:
+    dest: "{{ PApplet_path }}{{PApplet_name }}/data/hostinfo.json"
+    content: |
+       {
+        "hostname": "{{ ansible_hostname }}",
+        "ipaddr": "{{ ansible_all_ipv4_addresses }}",
+        "osrelease": "{{ ansible_distribution }}",
+        "cpu": "{{ ansible_processor[1] }}",
+        "arch": "{{ ansible_architecture }}",
+        "memory": "{{ (ansible_memtotal_mb/1024)|round|int }}"
+       }
+
+- name: Set perms on app dir
+  file:
+    path: "{{ PApplet_path }}{{ PApplet_name }}"
+    mode: 0755
+    owner: pi
+    group: pi
+    recurse: yes
+
+- name: Update processing launch script
+  shell: | 
+     echo "{{ PApplet_path }}{{ PApplet_name }}/{{ PApplet_name }} >> {{ PApplet_path }}{{PApplet_name}}/{{ PApplet_name }}.log 2>&1" > {{ PApplet_launch_script_path }}{{ PApplet_launch_script_name }}
+     chmod 755 {{ PApplet_launch_script_path }}{{ PApplet_launch_script_name }}
+     chown pi:pi {{ PApplet_launch_script_path }}{{ PApplet_launch_script_name }}
+
+- name: Kill any running app (with a sledgehammer)
+  become_user: pi
+  command: 'pkill java'
+  ignore_errors: true
+   
+- name: Launch the app
+  become_user: pi
+  # I'm not sure why backgrounding this didn't work until I invoked it with nohup
+#  shell: 'export DISPLAY=:0 ; /usr/bin/nohup {{ PApplet_path }}{{ PApplet_name }}/{{ PApplet_name }} &'
+#  shell: 'export DISPLAY=:0 ; /usr/bin/nohup {{ PApplet_path }}{{ PApplet_name }}/{{ PApplet_name }} >> {{ PApplet_path }}{{ PApplet_name }}/{{ PApplet_name }}.log 2>&1'
+  shell: 'export DISPLAY=:0 ; /usr/bin/nohup {{ PApplet_launch_script_path }}{{ PApplet_launch_script_name }} &'
+  register: mylauncheroutput
+  async: 0
+  poll: 0
+  ignore_errors: true
+- debug:
+    msg: "Launch app task returned {{mylauncheroutput}}"

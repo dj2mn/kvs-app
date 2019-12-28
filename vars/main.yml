@@ -1,0 +1,5 @@
+---
+PApplet_path: "/home/pi/sketchbook/"
+PApplet_src: "/Users/stewart/Dropbox/Documents/Processing3/{{PApplet_name}}/application.linux-armv6hf"
+PApplet_launch_script_path: "/home/pi/.config/lxsession/LXDE-pi/"
+PApplet_launch_script_name: "processing.sh"
